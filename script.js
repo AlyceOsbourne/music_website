@@ -121,10 +121,11 @@ function drawRadialSpikesShape(alpha = 1) {
   let spikes = 96;
   let angleStep = (Math.PI * 2) / spikes;
   let time = Date.now() * 0.001;
-  let minSpike = 1; // Minimum spike length in pixels (most subtle)
+  let minSpike = 0.05; // Much smaller minimum spike length
   for (let i = 0; i < spikes; i++) {
     let value = dataArray[i % dataArray.length] / 255;
-    let spikeLength = minSpike + radius * 0.3 + value * radius * 0.7;
+    // Reduce base spike length so spikes are almost invisible at silence
+    let spikeLength = minSpike + value * radius * 1.9;
     let angle = i * angleStep;
     let x1 = centerX + Math.cos(angle) * radius;
     let y1 = centerY + Math.sin(angle) * radius;
@@ -848,3 +849,44 @@ function updateVisualizerIcon() {
 
 // Set the correct icon for the default mode on load
 updateVisualizerIcon();
+
+// --- Keyboard Hotkeys ---
+document.addEventListener('keydown', (e) => {
+  // Ignore if focus is on an input, textarea, or contenteditable
+  const tag = document.activeElement.tagName.toLowerCase();
+  if (['input', 'textarea'].includes(tag) || document.activeElement.isContentEditable) return;
+
+  switch (e.key) {
+    case ' ': // Spacebar: Play/Pause
+      e.preventDefault();
+      playBtn.click();
+      break;
+    case 'm': // Mute/Unmute
+    case 'M':
+      volumeToggleBtn.click();
+      break;
+    case 'ArrowRight': // Next track
+      nextBtn.click();
+      break;
+    case 'ArrowLeft': // Previous track
+      prevBtn.click();
+      break;
+    case 's': // Stop
+    case 'S':
+      stopBtn.click();
+      break;
+    case 'r': // Shuffle
+    case 'R':
+      shuffleBtn.click();
+      break;
+    case 'c': // Cycle visualizer
+    case 'C':
+      if (cycleVisualizerBtn) cycleVisualizerBtn.click();
+      break;
+    // Optionally, focus volume slider with 'v'
+    case 'v':
+    case 'V':
+      if (volumeSlider) volumeSlider.focus();
+      break;
+  }
+});
