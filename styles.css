@@ -37,7 +37,7 @@ body {
   position: fixed;
   top: 0; left: 0;
   width: 320px;
-  height: 100vh;
+  height: calc(100vh - 120px);
   background: rgba(16,16,24,0.85);
   box-shadow: 4px 0 24px #000a, 0 0 8px #2228;
   z-index: 2;
@@ -49,6 +49,13 @@ body {
   border-right: 1.5px solid #23233a;
   box-sizing: border-box;
   justify-content: flex-start;
+  overflow-y: visible;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  position: relative;
+}
+#sidebar::-webkit-scrollbar {
+  display: none;
 }
 
 #sidebar h1 {
@@ -72,8 +79,6 @@ body {
   flex: 1 1 auto;
   overflow-y: auto;
   width: 100%;
-  display: flex;
-  flex-direction: column;
   gap: 12px;
   margin-top: 0px;
   margin-bottom: 0;
@@ -82,6 +87,12 @@ body {
   padding-right: 8px;
   padding-top: 12px;
   min-height: 80px;
+  max-height: none;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+#track-list::-webkit-scrollbar {
+  display: none;
 }
 
 #track-list button {
@@ -242,6 +253,29 @@ body {
   color: #b266ff;
   border: 1.5px solid #b266ff;
   box-shadow: 0 0 8px #b266ff;
+}
+
+#sidebar-scrollbar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 8px;
+  height: 100%;
+  background: transparent;
+  z-index: 10;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-start;
+}
+#sidebar-scrollbar-thumb {
+  width: 8px;
+  border-radius: 6px;
+  background: linear-gradient(to bottom, #b266ff 0%, #00ffe7 100%);
+  box-shadow: 0 0 8px #b266ff44;
+  margin-left: 0;
+  position: absolute;
+  left: 0;
+  pointer-events: auto;
 }
 
 @media (max-width: 520px) {

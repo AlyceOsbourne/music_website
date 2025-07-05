@@ -2,6 +2,8 @@ const trackListEl = document.getElementById("track-list");
 const player = document.getElementById("player");
 const canvas = document.getElementById("waveform");
 const ctx = canvas.getContext("2d");
+const sidebar = document.getElementById("sidebar");
+const sidebarScrollbar = document.getElementById("sidebar-scrollbar");
 
 const playBtn = document.getElementById("play-btn");
 const prevBtn = document.getElementById("prev-btn");
@@ -23,6 +25,11 @@ let isShuffling = false;
 let shuffleOrder = [];
 let fadeOut = false;
 let fadeLevel = 1;
+
+// Create the thumb element
+const sidebarThumb = document.createElement("div");
+sidebarThumb.id = "sidebar-scrollbar-thumb";
+sidebarScrollbar.appendChild(sidebarThumb);
 
 function setupAudioContext() {
   if (!audioCtx) {
@@ -257,3 +264,50 @@ fetch("tracks.json")
     });
     loadTrack(0);
   });
+
+function updateSidebarScrollbar() {
+  const visible = trackListEl.clientHeight;
+  const content = trackListEl.scrollHeight;
+  const scrollTop = trackListEl.scrollTop;
+  if (content <= visible) {
+    sidebarThumb.style.display = "none";
+    return;
+  }
+  sidebarThumb.style.display = "block";
+  const thumbHeight = Math.max((visible / content) * visible, 32);
+  const thumbTop = (scrollTop / (content - visible)) * (visible - thumbHeight);
+  sidebarThumb.style.height = `${thumbHeight}px`;
+  sidebarThumb.style.top = `${trackListEl.offsetTop + thumbTop}px`;
+}
+
+trackListEl.addEventListener("scroll", updateSidebarScrollbar);
+window.addEventListener("resize", updateSidebarScrollbar);
+
+// Drag to scroll
+let isDragging = false;
+let dragStartY = 0;
+let dragStartScroll = 0;
+sidebarThumb.addEventListener("mousedown", (e) => {
+  isDragging = true;
+  dragStartY = e.clientY;
+  dragStartScroll = trackListEl.scrollTop;
+  document.body.style.userSelect = "none";
+});
+document.addEventListener("mousemove", (e) => {
+  if (!isDragging) return;
+  const visible = trackListEl.clientHeight;
+  const content = trackListEl.scrollHeight;
+  const thumbHeight = sidebarThumb.offsetHeight;
+  const deltaY = e.clientY - dragStartY;
+  const maxScroll = content - visible;
+  const maxThumbMove = visible - thumbHeight;
+  const scrollRatio = maxScroll / maxThumbMove;
+  trackListEl.scrollTop = dragStartScroll + deltaY * scrollRatio;
+});
+document.addEventListener("mouseup", () => {
+  isDragging = false;
+  document.body.style.userSelect = "";
+});
+
+// Initial update
+window.addEventListener("DOMContentLoaded", updateSidebarScrollbar);
