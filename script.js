@@ -15,6 +15,10 @@ const playIcon = document.getElementById("play-icon");
 const pauseIcon = document.getElementById("pause-icon");
 const shuffleBtn = document.getElementById("shuffle-btn");
 const stopBtn = document.getElementById("stop-btn");
+const volumeSlider = document.getElementById("volume-slider");
+const volumeToggleBtn = document.getElementById("volume-toggle-btn");
+const volumeOnIcon = document.getElementById("volume-on-icon");
+const volumeOffIcon = document.getElementById("volume-off-icon");
 
 let audioCtx, analyser, source, dataArray, animationId;
 let tracks = [];
@@ -36,6 +40,8 @@ let visualizerMode = 0;
 const sidebarThumb = document.createElement("div");
 sidebarThumb.id = "sidebar-scrollbar-thumb";
 sidebarScrollbar.appendChild(sidebarThumb);
+
+let lastVolume = volumeSlider.value;
 
 function setupAudioContext() {
   if (!audioCtx) {
@@ -391,6 +397,39 @@ stopBtn.addEventListener('click', () => {
   playIcon.style.display = '';
   pauseIcon.style.display = 'none';
   playBtn.classList.remove('glow');
+});
+
+// Set initial volume
+player.volume = volumeSlider.value;
+
+volumeToggleBtn.addEventListener("click", () => {
+  if (player.muted || player.volume === 0) {
+    player.muted = false;
+    player.volume = lastVolume > 0 ? lastVolume : 1;
+    volumeSlider.value = player.volume;
+    volumeOnIcon.style.display = "";
+    volumeOffIcon.style.display = "none";
+  } else {
+    player.muted = true;
+    lastVolume = player.volume;
+    player.volume = 0;
+    volumeSlider.value = 0;
+    volumeOnIcon.style.display = "none";
+    volumeOffIcon.style.display = "";
+  }
+});
+
+volumeSlider.addEventListener("input", () => {
+  player.volume = volumeSlider.value;
+  player.muted = player.volume == 0;
+  if (player.volume == 0) {
+    volumeOnIcon.style.display = "none";
+    volumeOffIcon.style.display = "";
+  } else {
+    volumeOnIcon.style.display = "";
+    volumeOffIcon.style.display = "none";
+    lastVolume = player.volume;
+  }
 });
 
 fetch("tracks.json")
