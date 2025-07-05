@@ -37,7 +37,7 @@ body {
   position: fixed;
   top: 0; left: 0;
   width: 320px;
-  height: calc(100vh - 120px);
+  height: calc(100vh - 100px);
   background: rgba(16,16,24,0.85);
   box-shadow: 4px 0 24px #000a, 0 0 8px #2228;
   z-index: 2;
