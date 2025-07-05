@@ -25,6 +25,15 @@ let isShuffling = false;
 let shuffleOrder = [];
 let fadeOut = false;
 let fadeLevel = 1;
+let bassPulse = 0;
+
+// Particle Burst State (ensure these are top-level)
+let particles = [];
+let lastParticleTime = 0;
+
+// Visualizer morphing state
+let visualizerModes = ['waveform', 'radialSpikes', 'particleBurst', 'plasmaGrid'];
+let visualizerMode = 0;
 
 // Create the thumb element
 const sidebarThumb = document.createElement("div");
@@ -51,23 +60,10 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-function drawWaveform() {
-  if (fadeOut) {
-    fadeLevel -= 0.05;
-    if (fadeLevel <= 0) {
-      fadeLevel = 0;
-      fadeOut = false;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      return;
-    }
-  } else {
-    fadeLevel = 1;
-  }
-  animationId = requestAnimationFrame(drawWaveform);
+function drawWaveformShape(alpha = 1) {
   analyser.getByteTimeDomainData(dataArray);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.save();
-  ctx.globalAlpha = fadeLevel;
+  ctx.globalAlpha = alpha * fadeLevel;
   ctx.beginPath();
   let grad = ctx.createLinearGradient(0, 0, canvas.width, 0);
   grad.addColorStop(0, '#00ffe7');
@@ -92,6 +88,169 @@ function drawWaveform() {
   ctx.restore();
 }
 
+function drawRadialSpikesShape(alpha = 1) {
+  analyser.getByteFrequencyData(dataArray);
+  ctx.save();
+  ctx.globalAlpha = alpha * fadeLevel;
+  let centerX = canvas.width / 2;
+  let centerY = canvas.height / 2;
+  let radius = Math.min(canvas.width, canvas.height) / 5;
+  let spikes = 96;
+  let angleStep = (Math.PI * 2) / spikes;
+  let time = Date.now() * 0.001;
+  for (let i = 0; i < spikes; i++) {
+    let value = dataArray[i % dataArray.length] / 255;
+    let spikeLength = radius * 0.7 + value * radius * 1.2;
+    let angle = i * angleStep;
+    let x1 = centerX + Math.cos(angle) * radius;
+    let y1 = centerY + Math.sin(angle) * radius;
+    let x2 = centerX + Math.cos(angle) * (radius + spikeLength);
+    let y2 = centerY + Math.sin(angle) * (radius + spikeLength);
+    ctx.save();
+    ctx.shadowColor = `hsl(${(time * 60 + i * 4) % 360}, 100%, 60%)`;
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.strokeStyle = `hsl(${(time * 60 + i * 4) % 360}, 100%, 60%)`;
+    ctx.lineWidth = 3 + value * 4;
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function drawParticleBurstShape(alpha = 1) {
+  analyser.getByteFrequencyData(dataArray);
+  ctx.save();
+  ctx.globalAlpha = alpha * fadeLevel;
+  let centerX = canvas.width / 2;
+  let centerY = canvas.height / 2;
+  let time = Date.now() * 0.001;
+  // Frequency bands
+  const N = dataArray.length;
+  // Low: 0-1/8, Mid: 1/8-1/3, High: 1/3-1
+  let low = 0, mid = 0, high = 0;
+  let lowCount = Math.floor(N / 8);
+  let midCount = Math.floor(N / 3) - lowCount;
+  let highCount = N - (lowCount + midCount);
+  for (let i = 0; i < lowCount; i++) low += dataArray[i];
+  for (let i = lowCount; i < lowCount + midCount; i++) mid += dataArray[i];
+  for (let i = lowCount + midCount; i < N; i++) high += dataArray[i];
+  low = (low / lowCount) / 255;
+  mid = (mid / midCount) / 255;
+  high = (high / highCount) / 255;
+  // Stronger weighting: much more low/high, much less mid
+  let energy = 0.85 * low + 0.05 * mid + 1.1 * high;
+  if (energy > 0.38 && Date.now() - lastParticleTime > 60) {
+    for (let i = 0; i < 16; i++) {
+      let angle = Math.random() * Math.PI * 2;
+      // Particle speed: even more low/high
+      let speed = 3 + Math.random() * 3 + (1.0 * low + 1.0 * high) * 8;
+      // Color: even more high freq influence
+      let hue = (time * 120 + angle * 180 / Math.PI + high * 180) % 360;
+      particles.push({
+        x: centerX,
+        y: centerY,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 0,
+        maxLife: 32 + Math.random() * 24,
+        hue,
+      });
+    }
+    lastParticleTime = Date.now();
+  }
+  // Update and draw particles
+  let newParticles = [];
+  for (let p of particles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vx *= 0.97;
+    p.vy *= 0.97;
+    p.life++;
+    let alphaP = Math.max(0, 1 - p.life / p.maxLife);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4 + 8 * alphaP, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${p.hue}, 100%, 60%, ${0.18 + 0.5 * alphaP})`;
+    ctx.shadowColor = `hsl(${p.hue}, 100%, 60%)`;
+    ctx.shadowBlur = 16 + 24 * alphaP;
+    ctx.fill();
+    ctx.restore();
+    if (p.life < p.maxLife) newParticles.push(p);
+  }
+  particles = newParticles;
+  ctx.restore();
+}
+
+function drawPlasmaGridShape(alpha = 1) {
+  analyser.getByteFrequencyData(dataArray);
+  ctx.save();
+  ctx.globalAlpha = alpha * fadeLevel;
+  let cols = 18;
+  let rows = 10;
+  let cellW = canvas.width / cols;
+  let cellH = canvas.height / rows;
+  let time = Date.now() * 0.001;
+  // Global grid pulse on strong beats
+  let globalEnergy = 0;
+  for (let i = 0; i < 32; i++) globalEnergy += dataArray[i];
+  globalEnergy = (globalEnergy / 32) / 255;
+  let gridPulse = 1 + 0.18 * Math.sin(time * 8) + (globalEnergy > 0.55 ? 0.25 * Math.sin(time * 24) : 0);
+  let colorWave = (time * 60) % 360;
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      let idx = Math.floor((x + y * cols) / (cols * rows) * dataArray.length);
+      let energy = dataArray[idx] / 255;
+      let flicker = Math.abs(Math.sin(time * (1.2 + x * 0.1 + y * 0.13) + idx));
+      let intensity = Math.max(energy, flicker * 0.5);
+      // Point breathing/oscillation
+      let breathe = 1 + 0.18 * Math.sin(time * 4 + x * 0.7 + y * 0.9 + intensity * 2);
+      let cx = x * cellW + cellW / 2;
+      let cy = y * cellH + cellH / 2;
+      // Color wave flows horizontally
+      let hue = (colorWave + x * 24 + y * 12 + Math.sin(time + x * 0.2) * 24) % 360;
+      ctx.save();
+      ctx.shadowColor = `hsl(${hue}, 100%, 60%)`;
+      ctx.shadowBlur = 16 + 28 * intensity * gridPulse;
+      ctx.beginPath();
+      ctx.arc(cx, cy, (5 + 18 * intensity) * breathe * gridPulse, 0, Math.PI * 2);
+      ctx.fillStyle = `hsl(${hue}, 100%, ${40 + 40 * intensity}%)`;
+      ctx.globalAlpha = 0.7 + 0.3 * intensity;
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+function drawVisualizer() {
+  if (fadeOut) {
+    fadeLevel -= 0.05;
+    if (fadeLevel <= 0) {
+      fadeLevel = 0;
+      fadeOut = false;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
+  } else {
+    fadeLevel = 1;
+  }
+  animationId = requestAnimationFrame(drawVisualizer);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (visualizerModes[visualizerMode] === 'waveform') {
+    drawWaveformShape(1);
+  } else if (visualizerModes[visualizerMode] === 'radialSpikes') {
+    drawRadialSpikesShape(1);
+  } else if (visualizerModes[visualizerMode] === 'particleBurst') {
+    drawParticleBurstShape(1);
+  } else if (visualizerModes[visualizerMode] === 'plasmaGrid') {
+    drawPlasmaGridShape(1);
+  }
+}
+
 function formatTime(sec) {
   sec = Math.floor(sec);
   const m = Math.floor(sec / 60);
@@ -104,6 +263,8 @@ function loadTrack(index) {
   if (index >= tracks.length) index = 0;
   currentTrack = index;
   player.src = tracks[currentTrack].file;
+  // Cancel any running animation loop before starting a new one
+  cancelAnimationFrame(animationId);
   if (isPlaying) {
     player.play();
   }
@@ -204,7 +365,7 @@ player.addEventListener('play', () => {
   audioCtx.resume();
   fadeOut = false;
   fadeLevel = 1;
-  drawWaveform();
+  drawVisualizer();
   isPlaying = true;
   playIcon.style.display = 'none';
   pauseIcon.style.display = '';
@@ -214,7 +375,7 @@ player.addEventListener('play', () => {
 player.addEventListener('pause', () => {
   fadeOut = true;
   cancelAnimationFrame(animationId);
-  animationId = requestAnimationFrame(drawWaveform);
+  animationId = requestAnimationFrame(drawVisualizer);
   isPlaying = false;
   playIcon.style.display = '';
   pauseIcon.style.display = 'none';
@@ -224,7 +385,7 @@ player.addEventListener('pause', () => {
 player.addEventListener('ended', () => {
   fadeOut = true;
   cancelAnimationFrame(animationId);
-  animationId = requestAnimationFrame(drawWaveform);
+  animationId = requestAnimationFrame(drawVisualizer);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   isPlaying = false;
   playIcon.style.display = '';
@@ -311,3 +472,52 @@ document.addEventListener("mouseup", () => {
 
 // Initial update
 window.addEventListener("DOMContentLoaded", updateSidebarScrollbar);
+
+// Add button event listener
+document.getElementById('cycle-visualizer-btn').addEventListener('click', () => {
+  // Start fade out
+  let fade = 1;
+  const fadeStep = 0.08;
+  function fadeOutStep() {
+    fade -= fadeStep;
+    ctx.globalAlpha = Math.max(0, fade);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (visualizerModes[visualizerMode] === 'waveform') {
+      drawWaveformShape(fade);
+    } else if (visualizerModes[visualizerMode] === 'radialSpikes') {
+      drawRadialSpikesShape(fade);
+    } else if (visualizerModes[visualizerMode] === 'particleBurst') {
+      drawParticleBurstShape(fade);
+    } else if (visualizerModes[visualizerMode] === 'plasmaGrid') {
+      drawPlasmaGridShape(fade);
+    }
+    if (fade > 0) {
+      requestAnimationFrame(fadeOutStep);
+    } else {
+      // Switch mode and fade in
+      visualizerMode = (visualizerMode + 1) % visualizerModes.length;
+      let fadeIn = 0;
+      function fadeInStep() {
+        fadeIn += fadeStep;
+        ctx.globalAlpha = Math.min(1, fadeIn);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (visualizerModes[visualizerMode] === 'waveform') {
+          drawWaveformShape(fadeIn);
+        } else if (visualizerModes[visualizerMode] === 'radialSpikes') {
+          drawRadialSpikesShape(fadeIn);
+        } else if (visualizerModes[visualizerMode] === 'particleBurst') {
+          drawParticleBurstShape(fadeIn);
+        } else if (visualizerModes[visualizerMode] === 'plasmaGrid') {
+          drawPlasmaGridShape(fadeIn);
+        }
+        if (fadeIn < 1) {
+          requestAnimationFrame(fadeInStep);
+        } else {
+          ctx.globalAlpha = 1;
+        }
+      }
+      requestAnimationFrame(fadeInStep);
+    }
+  }
+  requestAnimationFrame(fadeOutStep);
+});
