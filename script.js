@@ -27,15 +27,12 @@ let fadeOut = false;
 let fadeLevel = 1;
 let bassPulse = 0;
 
-// Particle Burst State (ensure these are top-level)
 let particles = [];
 let lastParticleTime = 0;
 
-// Visualizer morphing state
 let visualizerModes = ['waveform', 'radialSpikes', 'particleBurst', 'plasmaGrid'];
 let visualizerMode = 0;
 
-// Create the thumb element
 const sidebarThumb = document.createElement("div");
 sidebarThumb.id = "sidebar-scrollbar-thumb";
 sidebarScrollbar.appendChild(sidebarThumb);
@@ -127,9 +124,7 @@ function drawParticleBurstShape(alpha = 1) {
   let centerX = canvas.width / 2;
   let centerY = canvas.height / 2;
   let time = Date.now() * 0.001;
-  // Frequency bands
   const N = dataArray.length;
-  // Low: 0-1/8, Mid: 1/8-1/3, High: 1/3-1
   let low = 0, mid = 0, high = 0;
   let lowCount = Math.floor(N / 8);
   let midCount = Math.floor(N / 3) - lowCount;
@@ -140,14 +135,11 @@ function drawParticleBurstShape(alpha = 1) {
   low = (low / lowCount) / 255;
   mid = (mid / midCount) / 255;
   high = (high / highCount) / 255;
-  // Stronger weighting: much more low/high, much less mid
   let energy = 0.85 * low + 0.05 * mid + 1.1 * high;
   if (energy > 0.38 && Date.now() - lastParticleTime > 60) {
     for (let i = 0; i < 16; i++) {
       let angle = Math.random() * Math.PI * 2;
-      // Particle speed: even more low/high
       let speed = 3 + Math.random() * 3 + (1.0 * low + 1.0 * high) * 8;
-      // Color: even more high freq influence
       let hue = (time * 120 + angle * 180 / Math.PI + high * 180) % 360;
       particles.push({
         x: centerX,
@@ -161,7 +153,6 @@ function drawParticleBurstShape(alpha = 1) {
     }
     lastParticleTime = Date.now();
   }
-  // Update and draw particles
   let newParticles = [];
   for (let p of particles) {
     p.x += p.vx;
@@ -193,7 +184,6 @@ function drawPlasmaGridShape(alpha = 1) {
   let cellW = canvas.width / cols;
   let cellH = canvas.height / rows;
   let time = Date.now() * 0.001;
-  // Global grid pulse on strong beats
   let globalEnergy = 0;
   for (let i = 0; i < 32; i++) globalEnergy += dataArray[i];
   globalEnergy = (globalEnergy / 32) / 255;
@@ -205,11 +195,9 @@ function drawPlasmaGridShape(alpha = 1) {
       let energy = dataArray[idx] / 255;
       let flicker = Math.abs(Math.sin(time * (1.2 + x * 0.1 + y * 0.13) + idx));
       let intensity = Math.max(energy, flicker * 0.5);
-      // Point breathing/oscillation
       let breathe = 1 + 0.18 * Math.sin(time * 4 + x * 0.7 + y * 0.9 + intensity * 2);
       let cx = x * cellW + cellW / 2;
       let cy = y * cellH + cellH / 2;
-      // Color wave flows horizontally
       let hue = (colorWave + x * 24 + y * 12 + Math.sin(time + x * 0.2) * 24) % 360;
       ctx.save();
       ctx.shadowColor = `hsl(${hue}, 100%, 60%)`;
@@ -263,7 +251,6 @@ function loadTrack(index) {
   if (index >= tracks.length) index = 0;
   currentTrack = index;
   player.src = tracks[currentTrack].file;
-  // Cancel any running animation loop before starting a new one
   cancelAnimationFrame(animationId);
   if (isPlaying) {
     player.play();
@@ -272,7 +259,6 @@ function loadTrack(index) {
 }
 
 function updateTrackButtons() {
-  // Optionally highlight the current track button
   Array.from(trackListEl.children).forEach((btn, idx) => {
     btn.style.boxShadow = idx === currentTrack ? '0 0 16px #ff00cc, 0 0 8px #00ffe7' : '';
     btn.style.background = idx === currentTrack ? '#00ffe7' : '#23233a';
@@ -281,12 +267,10 @@ function updateTrackButtons() {
 }
 
 function shuffleArray(array) {
-  // Fisher-Yates shuffle with crypto randomness if available
   let arr = array.slice();
   let random;
   for (let i = arr.length - 1; i > 0; i--) {
     if (window.crypto && window.crypto.getRandomValues) {
-      // Use crypto for better randomness
       const uint32 = new Uint32Array(1);
       window.crypto.getRandomValues(uint32);
       random = uint32[0] / (0xFFFFFFFF + 1);
@@ -391,6 +375,7 @@ player.addEventListener('ended', () => {
   playIcon.style.display = '';
   pauseIcon.style.display = '';
   loadTrack(getNextTrackIndex());
+  player.play();
 });
 
 player.addEventListener('timeupdate', () => {
@@ -470,12 +455,9 @@ document.addEventListener("mouseup", () => {
   document.body.style.userSelect = "";
 });
 
-// Initial update
 window.addEventListener("DOMContentLoaded", updateSidebarScrollbar);
 
-// Add button event listener
 document.getElementById('cycle-visualizer-btn').addEventListener('click', () => {
-  // Start fade out
   let fade = 1;
   const fadeStep = 0.08;
   function fadeOutStep() {
@@ -494,7 +476,6 @@ document.getElementById('cycle-visualizer-btn').addEventListener('click', () => 
     if (fade > 0) {
       requestAnimationFrame(fadeOutStep);
     } else {
-      // Switch mode and fade in
       visualizerMode = (visualizerMode + 1) % visualizerModes.length;
       let fadeIn = 0;
       function fadeInStep() {

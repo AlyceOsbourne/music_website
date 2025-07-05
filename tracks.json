@@ -1,15 +1,19 @@
 [
   {"title": "angels", "file": "tracks/angels.wav"},
-  {"title": "demons", "file": "tracks/demons.wav"},
+  {"title": "bliss", "file": "tracks/bliss.mp3"},
   {"title": "as_i_lay_dying", "file": "tracks/as_i_lay_dying.wav"},
-  {"title": "wakka_wakka_wakka", "file": "tracks/wakkawakkawakka.wav"},
+  {"title": "demons", "file": "tracks/demons.wav"},
+  {"title": "demons_in_my_sleep", "file": "tracks/demons_in_my_sleep.wav"},
   {"title": "fractured_psyche", "file": "tracks/fractured_psyche.mp3"},
   {"title": "losing_my_mind", "file": "tracks/losing_my_mind.mp3"},
-  {"title": "sincerly", "file": "tracks/sincerly.mp3"},
   {"title": "breathless", "file": "tracks/breathless.mp3"},
   {"title": "panic", "file": "tracks/panic.mp3"},
   {"title": "scream", "file": "tracks/scream.mp3"},
   {"title": "beyond_help", "file": "tracks/beyond_help.mp3"},
+  {"title": "the_fall", "file": "tracks/the_fall.wav"},
+  {"title": "Run", "file": "tracks/Run.wav"},
   {"title": "come_at_me", "file": "tracks/come_at_me.mp3"},
-  {"title": "enraged", "file": "tracks/enraged.mp3"}
+  {"title": "enraged", "file": "tracks/enraged.mp3"},
+  {"title": "sincerly", "file": "tracks/sincerly.mp3"},
+  {"title": "wakka_wakka_wakka", "file": "tracks/wakkawakkawakka.wav"}
 ] 
