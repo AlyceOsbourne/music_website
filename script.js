@@ -813,8 +813,8 @@ window.addEventListener("resize", () => {
 
 // Start with sidebar collapsed on large screens
 window.addEventListener('DOMContentLoaded', () => {
-  if (window.innerWidth >= 900) {
-    sidebar.classList.add('collapsed');
+  if (window.innerWidth < 900) {
+    sidebar.classList.remove('collapsed');
   }
   updateSidebarChevron();
 });
