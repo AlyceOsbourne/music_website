@@ -646,4 +646,11 @@ body {
   background: #ff3366;
   color: #fff;
   outline: none;
+}
+
+/* Hide UI for inactivity */
+.ui-hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.5s cubic-bezier(.77,.2,.05,1.0);
 } 

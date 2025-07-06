@@ -52,7 +52,6 @@ let lastVolume = volumeSlider.value;
 
 let hasStarted = false;
 
-// Set the correct icon for random mode on load
 if (visualizerSparkle && visualizerInterrobang) {
   if (visualizerModes[visualizerMode] === 'random') {
     visualizerSparkle.style.display = 'none';
@@ -96,7 +95,6 @@ function drawWaveformShape(alpha = 1) {
   ctx.lineWidth = 2;
   let sliceWidth = canvas.width / analyser.fftSize;
   let x = 0;
-  // Compute all points first
   let points = [];
   for (let i = 0; i < analyser.fftSize; i++) {
     let v = dataArray[i] / 128.0;
@@ -104,15 +102,12 @@ function drawWaveformShape(alpha = 1) {
     points.push({ x, y });
     x += sliceWidth;
   }
-  // Move to first point
   ctx.moveTo(points[0].x, points[0].y);
-  // Use quadraticCurveTo for smoothing
   for (let i = 1; i < points.length - 1; i++) {
     let xc = (points[i].x + points[i + 1].x) / 2;
     let yc = (points[i].y + points[i + 1].y) / 2;
     ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
   }
-  // Line to last point
   ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
   ctx.stroke();
   ctx.restore();
@@ -128,10 +123,9 @@ function drawRadialSpikesShape(alpha = 1) {
   let spikes = 96;
   let angleStep = (Math.PI * 2) / spikes;
   let time = Date.now() * 0.001;
-  let minSpike = 0.05; // Much smaller minimum spike length
+  let minSpike = 0.05;
   for (let i = 0; i < spikes; i++) {
     let value = dataArray[i % dataArray.length] / 255;
-    // Reduce base spike length so spikes are almost invisible at silence
     let spikeLength = minSpike + value * radius * 1.9;
     let angle = i * angleStep;
     let x1 = centerX + Math.cos(angle) * radius;
@@ -252,12 +246,11 @@ function drawPlasmaGridShape(alpha = 1) {
 function getVisualizerForTrack(index) {
   if (visualizerModes[visualizerMode] !== 'random') return visualizerModes[visualizerMode];
   if (!trackVisualizerMap[index]) {
-    // Exclude 'random' from possible choices
     const choices = visualizerModes.filter(m => m !== 'random');
     let prevForThisTrack = trackVisualizerMap[index];
     let prevForPrevTrack = index > 0 ? trackVisualizerMap[index - 1] : undefined;
     let newChoices = choices.filter(c => c !== prevForThisTrack && c !== prevForPrevTrack);
-    if (newChoices.length === 0) newChoices = choices; // fallback if all are filtered
+    if (newChoices.length === 0) newChoices = choices;
     let newChoice = newChoices[Math.floor(Math.random() * newChoices.length)];
     trackVisualizerMap[index] = newChoice;
   }
@@ -269,12 +262,11 @@ function pickNewRandomVisualizerForTrack(index) {
   const prevForThisTrack = trackVisualizerMap[index];
   const prevForPrevTrack = index > 0 ? trackVisualizerMap[index - 1] : undefined;
   let newChoices = choices.filter(c => c !== prevForThisTrack && c !== prevForPrevTrack);
-  if (newChoices.length === 0) newChoices = choices; // fallback if all are filtered
+  if (newChoices.length === 0) newChoices = choices;
   let newChoice = newChoices[Math.floor(Math.random() * newChoices.length)];
   trackVisualizerMap[index] = newChoice;
 }
 
-// --- Plasma Globe Visualizer ---
 let plasmaGlobes = [];
 function drawPlasmaGlobeShape(alpha = 1) {
   analyser.getByteFrequencyData(dataArray);
@@ -283,32 +275,23 @@ function drawPlasmaGlobeShape(alpha = 1) {
   let centerX = canvas.width / 2;
   let centerY = canvas.height / 2;
   let time = Date.now() * 0.001;
-  // Globe border
   let globeRadius = Math.min(canvas.width, canvas.height) * 0.36;
-  // --- Stylish, flickering, pulsing ring ---
   let bassPulse = 0;
   for (let i = 0; i < 16; i++) bassPulse += dataArray[i];
   bassPulse = (bassPulse / 16) / 255;
-  // Flicker: time-based random
   let flicker = 0.92 + 0.08 * Math.sin(time * 8 + Math.sin(time * 2)) + (Math.random() - 0.5) * 0.04;
-  // Pulse: based on bass
   let pulse = 1 + 0.13 * Math.sin(time * 4 + bassPulse * 2) + 0.18 * bassPulse;
   let ringThickness = 6 * flicker * pulse;
-
-  // --- Animated gradient, mean color of bolts ---
-  // Calculate mean hue of active bolts
   let meanHue = 200;
   if (plasmaGlobes.length > 0) {
     let sum = 0;
     for (let p of plasmaGlobes) {
-      // Extract hue from color string: hsl(hue, ...
       let match = /hsl\((\d+)/.exec(p.color);
       if (match) sum += parseFloat(match[1]);
     }
     meanHue = sum / plasmaGlobes.length;
   }
-  // Animate gradient stops
-  let gradShift = (Math.sin(time * 0.5) + 1) * 60; // -60 to +60
+  let gradShift = (Math.sin(time * 0.5) + 1) * 60;
   let hue1 = (meanHue - 40 + gradShift) % 360;
   let hue2 = (meanHue + gradShift) % 360;
   let hue3 = (meanHue + 40 + gradShift) % 360;
@@ -327,11 +310,9 @@ function drawPlasmaGlobeShape(alpha = 1) {
   ctx.globalAlpha = 0.32 + 0.18 * bassPulse;
   ctx.stroke();
   ctx.restore();
-  // Calculate bass energy
   let bass = 0;
   for (let i = 0; i < 16; i++) bass += dataArray[i];
   bass = (bass / 16) / 255;
-  // On strong bass, spawn new plasma bolt
   if (bass > 0.38 && Math.random() < 0.18) {
     let angle = Math.random() * Math.PI * 2;
     let color = `hsl(${180 + bass * 120 + Math.random() * 60}, 100%, 60%)`;
@@ -351,9 +332,7 @@ function drawPlasmaGlobeShape(alpha = 1) {
       bass
     });
   }
-  // Store impact points for glow
   let impactPoints = [];
-  // Fractal bolt drawing function
   function drawBolt(x1, y1, x2, y2, depth, maxDepth, color, mainAlpha, baseThickness) {
     if (depth > maxDepth) return;
     let dx = x2 - x1;
@@ -369,13 +348,11 @@ function drawPlasmaGlobeShape(alpha = 1) {
       ctx.shadowColor = color;
       ctx.shadowBlur = 10 + (maxDepth - depth) * 6;
       ctx.stroke();
-      // If this is the final segment and at the border, add to impact points
       if (depth === 0 || depth === 1) {
         impactPoints.push({ x: x2, y: y2, color, alpha: mainAlpha, thickness: baseThickness });
       }
       return;
     }
-    // Midpoint with random offset for fractal effect
     let mx = (x1 + x2) / 2;
     let my = (y1 + y2) / 2;
     let normal = { x: -(y2 - y1), y: x2 - x1 };
@@ -387,37 +364,30 @@ function drawPlasmaGlobeShape(alpha = 1) {
     let offset = (Math.random() - 0.5) * dist * 0.22 * (1 - depth / maxDepth);
     mx += normal.x * offset;
     my += normal.y * offset;
-    // Draw main branch
     drawBolt(x1, y1, mx, my, depth + 1, maxDepth, color, mainAlpha, baseThickness);
     drawBolt(mx, my, x2, y2, depth + 1, maxDepth, color, mainAlpha, baseThickness);
-    // Branching
     if (depth > 1 && Math.random() < 0.28 && depth < maxDepth - 1) {
       let branchAngle = Math.atan2(my - y1, mx - x1) + (Math.random() - 0.5) * Math.PI / 2;
       let branchLen = dist * (0.3 + Math.random() * 0.22);
       let bx = mx + Math.cos(branchAngle) * branchLen;
       let by = my + Math.sin(branchAngle) * branchLen;
-      // Ensure branch stays inside globe
       let dFromCenter = Math.sqrt((bx - centerX) ** 2 + (by - centerY) ** 2);
       if (dFromCenter < globeRadius - 8) {
         drawBolt(mx, my, bx, by, depth + 2, maxDepth, color, mainAlpha * 0.7, baseThickness * 0.6);
       }
     }
   }
-  // Animate and draw plasma bolts
   let newPlasmaGlobes = [];
   for (let p of plasmaGlobes) {
-    // End point on border
     let endAngle = p.angle;
     let ex = centerX + Math.cos(endAngle) * globeRadius;
     let ey = centerY + Math.sin(endAngle) * globeRadius;
-    // Animate waviness by modulating the end point
     let mod = Math.sin(time * 2 + p.phase) * 0.08 * globeRadius;
     ex += Math.cos(endAngle + Math.PI / 2) * mod;
     ey += Math.sin(endAngle + Math.PI / 2) * mod;
     ctx.save();
     let intensity = Math.max(0.5, p.bass || bass);
     ctx.globalAlpha = alpha * fadeLevel * (1 - p.life / p.maxLife);
-    // Thinner bolts, only thick at extremes
     let baseThickness = 1.2 + 5 * Math.pow(Math.max(0, intensity - 0.7), 2);
     drawBolt(p.x, p.y, ex, ey, 0, 5 + Math.floor(Math.random() * 2), p.color, ctx.globalAlpha, baseThickness);
     ctx.restore();
@@ -425,7 +395,6 @@ function drawPlasmaGlobeShape(alpha = 1) {
     if (p.life < p.maxLife) newPlasmaGlobes.push(p);
   }
   plasmaGlobes = newPlasmaGlobes;
-  // Draw glow at impact points
   for (let pt of impactPoints) {
     ctx.save();
     let glowRadius = 18 + 32 * (pt.thickness / 6);
@@ -481,7 +450,6 @@ function formatTime(sec) {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-// Centralized fade transition for visualizer changes
 function fadeToVisualizer(prevVisualizer, newVisualizer, onComplete) {
   let fade = 1;
   const fadeStep = 0.08;
@@ -520,7 +488,6 @@ function fadeToVisualizer(prevVisualizer, newVisualizer, onComplete) {
   requestAnimationFrame(fadeOutStep);
 }
 
-// Update loadTrack to use fadeToVisualizer
 function loadTrack(index) {
   if (index < 0) index = tracks.length - 1;
   if (index >= tracks.length) index = 0;
@@ -575,7 +542,6 @@ shuffleBtn.addEventListener('click', () => {
   shuffleBtn.classList.toggle('active', isShuffling);
   if (isShuffling) {
     shuffleOrder = shuffleArray([...Array(tracks.length).keys()]);
-    // Start shuffle from current track
     const idx = shuffleOrder.indexOf(currentTrack);
     if (idx > 0) {
       [shuffleOrder[0], shuffleOrder[idx]] = [shuffleOrder[idx], shuffleOrder[0]];
@@ -614,7 +580,6 @@ function getPrevTrackIndex() {
 playBtn.addEventListener('click', () => {
   if (player.paused) {
     if (!hasStarted && isShuffling && shuffleOrder.length > 0) {
-      // Pick a random track from shuffle order (not always the first)
       const randomIdx = Math.floor(Math.random() * shuffleOrder.length);
       loadTrack(shuffleOrder[randomIdx]);
     }
@@ -691,7 +656,6 @@ stopBtn.addEventListener('click', () => {
   hasStarted = false;
 });
 
-// Set initial volume
 player.volume = volumeSlider.value;
 
 volumeToggleBtn.addEventListener("click", () => {
@@ -760,7 +724,6 @@ function updateSidebarScrollbar() {
 trackListEl.addEventListener("scroll", updateSidebarScrollbar);
 window.addEventListener("resize", updateSidebarScrollbar);
 
-// Drag to scroll
 let isDragging = false;
 let dragStartY = 0;
 let dragStartScroll = 0;
@@ -788,12 +751,10 @@ document.addEventListener("mouseup", () => {
 
 window.addEventListener("DOMContentLoaded", updateSidebarScrollbar);
 
-// Cycle visualizer mode and update icon
 const cycleVisualizerBtn = document.getElementById('cycle-visualizer-btn');
 cycleVisualizerBtn.addEventListener('click', () => {
   const prevVisualizer = getVisualizerForTrack(currentTrack);
   visualizerMode = (visualizerMode + 1) % visualizerModes.length;
-  // Reset trackVisualizerMap if entering random mode
   if (visualizerModes[visualizerMode] === 'random') {
     trackVisualizerMap = {};
   }
@@ -818,7 +779,34 @@ window.addEventListener("resize", () => {
   }
 });
 
-// Helper functions for cookies
+window.addEventListener('DOMContentLoaded', () => {
+  const warning = document.getElementById('seizure-warning');
+  if (getCookie('hideSeizureWarning')) {
+    if (warning && warning.parentNode) warning.parentNode.removeChild(warning);
+  } else if (warning) {
+    const hideBtn = document.getElementById('hide-seizure-warning-btn');
+    if (hideBtn) {
+      hideBtn.addEventListener('click', () => {
+        setCookie('hideSeizureWarning', '1', 730);
+        warning.classList.add('fade-out');
+        warning.addEventListener('transitionend', () => {
+          if (warning.parentNode) warning.parentNode.removeChild(warning);
+        }, { once: true });
+      });
+    }
+    setTimeout(() => {
+      warning.classList.add('fade-out');
+      warning.addEventListener('transitionend', () => {
+        if (warning.parentNode) warning.parentNode.removeChild(warning);
+      }, { once: true });
+    }, 4000);
+  }
+  if (window.innerWidth < 900) {
+    sidebar.classList.remove('collapsed');
+  }
+  updateSidebarChevron();
+});
+
 function setCookie(name, value, days) {
   let expires = '';
   if (days) {
@@ -839,44 +827,15 @@ function getCookie(name) {
   return null;
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  // Seizure warning fade out and hide forever
-  const warning = document.getElementById('seizure-warning');
-  if (getCookie('hideSeizureWarning')) {
-    if (warning && warning.parentNode) warning.parentNode.removeChild(warning);
-  } else if (warning) {
-    const hideBtn = document.getElementById('hide-seizure-warning-btn');
-    if (hideBtn) {
-      hideBtn.addEventListener('click', () => {
-        setCookie('hideSeizureWarning', '1', 730); // 2 years
-        warning.classList.add('fade-out');
-        warning.addEventListener('transitionend', () => {
-          if (warning.parentNode) warning.parentNode.removeChild(warning);
-        }, { once: true });
-      });
-    }
-    setTimeout(() => {
-      warning.classList.add('fade-out');
-      warning.addEventListener('transitionend', () => {
-        if (warning.parentNode) warning.parentNode.removeChild(warning);
-      }, { once: true });
-    }, 4000);
-  }
-  if (window.innerWidth < 900) {
-    sidebar.classList.remove('collapsed');
-  }
-  updateSidebarChevron();
-});
-
 function updateSidebarChevron() {
   const chevron = document.getElementById('sidebar-chevron');
   if (!chevron) return;
   if (sidebar.classList.contains('collapsed')) {
-    chevron.style.transform = 'rotate(180deg)'; // Point right (expand)
+    chevron.style.transform = 'rotate(180deg)';
   } else {
-    chevron.style.transform = 'rotate(0deg)'; // Point left (collapse)
+    chevron.style.transform = 'rotate(0deg)';
   }
-  chevron.style.stroke = '#b266ff'; // Always purple
+  chevron.style.stroke = '#b266ff';
 }
 
 function updateVisualizerIcon() {
@@ -896,47 +855,76 @@ function updateVisualizerIcon() {
   else if (mode === 'random') visualizerInterrobang.style.display = '';
 }
 
-// Set the correct icon for the default mode on load
 updateVisualizerIcon();
 
-// --- Keyboard Hotkeys ---
 document.addEventListener('keydown', (e) => {
-  // Ignore if focus is on an input, textarea, or contenteditable
   const tag = document.activeElement.tagName.toLowerCase();
   if (['input', 'textarea'].includes(tag) || document.activeElement.isContentEditable) return;
 
   switch (e.key) {
-    case ' ': // Spacebar: Play/Pause
+    case ' ':
       e.preventDefault();
       playBtn.click();
       break;
-    case 'm': // Mute/Unmute
+    case 'm':
     case 'M':
       volumeToggleBtn.click();
       break;
-    case 'ArrowRight': // Next track
+    case 'ArrowRight':
       nextBtn.click();
       break;
-    case 'ArrowLeft': // Previous track
+    case 'ArrowLeft':
       prevBtn.click();
       break;
-    case 's': // Stop
+    case 's':
     case 'S':
       stopBtn.click();
       break;
-    case 'r': // Shuffle
+    case 'r':
     case 'R':
       shuffleBtn.click();
       break;
-    case 'c': // Cycle visualizer
+    case 'c':
     case 'C':
       if (cycleVisualizerBtn) cycleVisualizerBtn.click();
       break;
-    // Optionally, focus volume slider with 'v'
     case 'v':
     case 'V':
       if (volumeSlider) volumeSlider.focus();
       break;
   }
 });
+
+// Inactivity UI Hider
+const INACTIVITY_TIMEOUT = 5000; // 5 seconds
+const uiElementsToHide = [
+  document.getElementById('sidebar'),
+  document.getElementById('custom-controls-container'),
+  document.getElementById('cycle-visualizer-btn')
+];
+let inactivityTimer = null;
+
+function showUI() {
+  uiElementsToHide.forEach(el => {
+    if (el) el.classList.remove('ui-hidden');
+  });
+}
+
+function hideUI() {
+  uiElementsToHide.forEach(el => {
+    if (el) el.classList.add('ui-hidden');
+  });
+}
+
+function resetInactivityTimer() {
+  showUI();
+  if (inactivityTimer) clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(hideUI, INACTIVITY_TIMEOUT);
+}
+
+['mousemove', 'keydown', 'mousedown', 'touchstart'].forEach(event => {
+  document.addEventListener(event, resetInactivityTimer, true);
+});
+
+resetInactivityTimer();
 

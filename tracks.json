@@ -15,5 +15,8 @@
   {"title": "come_at_me", "file": "tracks/come_at_me.mp3"},
   {"title": "enraged", "file": "tracks/enraged.mp3"},
   {"title": "sincerly", "file": "tracks/sincerly.mp3"},
-  {"title": "wakka_wakka_wakka", "file": "tracks/wakkawakkawakka.wav"}
+  {"title": "wakka_wakka_wakka", "file": "tracks/wakkawakkawakka.wav"},
+  {"title": "escape", "file": "tracks/escape.mp3"},
+  {"title": "one_last_goodbye", "file": "tracks/one_last_goodbye.wav"},
+  {"title": "sing", "file": "tracks/sing.wav"}
 ] 
