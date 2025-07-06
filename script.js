@@ -96,17 +96,24 @@ function drawWaveformShape(alpha = 1) {
   ctx.lineWidth = 2;
   let sliceWidth = canvas.width / analyser.fftSize;
   let x = 0;
+  // Compute all points first
+  let points = [];
   for (let i = 0; i < analyser.fftSize; i++) {
     let v = dataArray[i] / 128.0;
     let y = (v * canvas.height) / 2;
-    if (i === 0) {
-      ctx.moveTo(x, y);
-    } else {
-      ctx.lineTo(x, y);
-    }
+    points.push({ x, y });
     x += sliceWidth;
   }
-  ctx.lineTo(canvas.width, canvas.height / 2);
+  // Move to first point
+  ctx.moveTo(points[0].x, points[0].y);
+  // Use quadraticCurveTo for smoothing
+  for (let i = 1; i < points.length - 1; i++) {
+    let xc = (points[i].x + points[i + 1].x) / 2;
+    let yc = (points[i].y + points[i + 1].y) / 2;
+    ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+  }
+  // Line to last point
+  ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
   ctx.stroke();
   ctx.restore();
 }
@@ -811,8 +818,50 @@ window.addEventListener("resize", () => {
   }
 });
 
-// Start with sidebar collapsed on large screens
+// Helper functions for cookies
+function setCookie(name, value, days) {
+  let expires = '';
+  if (days) {
+    const date = new Date();
+    date.setTime(date.getTime() + (days*24*60*60*1000));
+    expires = '; expires=' + date.toUTCString();
+  }
+  document.cookie = name + '=' + (value || '')  + expires + '; path=/';
+}
+function getCookie(name) {
+  const nameEQ = name + '=';
+  const ca = document.cookie.split(';');
+  for(let i=0;i < ca.length;i++) {
+    let c = ca[i];
+    while (c.charAt(0)==' ') c = c.substring(1,c.length);
+    if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+  }
+  return null;
+}
+
 window.addEventListener('DOMContentLoaded', () => {
+  // Seizure warning fade out and hide forever
+  const warning = document.getElementById('seizure-warning');
+  if (getCookie('hideSeizureWarning')) {
+    if (warning && warning.parentNode) warning.parentNode.removeChild(warning);
+  } else if (warning) {
+    const hideBtn = document.getElementById('hide-seizure-warning-btn');
+    if (hideBtn) {
+      hideBtn.addEventListener('click', () => {
+        setCookie('hideSeizureWarning', '1', 730); // 2 years
+        warning.classList.add('fade-out');
+        warning.addEventListener('transitionend', () => {
+          if (warning.parentNode) warning.parentNode.removeChild(warning);
+        }, { once: true });
+      });
+    }
+    setTimeout(() => {
+      warning.classList.add('fade-out');
+      warning.addEventListener('transitionend', () => {
+        if (warning.parentNode) warning.parentNode.removeChild(warning);
+      }, { once: true });
+    }, 4000);
+  }
   if (window.innerWidth < 900) {
     sidebar.classList.remove('collapsed');
   }
@@ -890,3 +939,4 @@ document.addEventListener('keydown', (e) => {
       break;
   }
 });
+

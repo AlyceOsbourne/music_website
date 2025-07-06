@@ -603,4 +603,47 @@ body {
   #sidebar {
     transform: none !important;
   }
+}
+
+#seizure-warning {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  z-index: 10000;
+  background: #ff0055;
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: center;
+  padding: 18px 8px 14px 8px;
+  box-shadow: 0 2px 16px #000a;
+  letter-spacing: 1px;
+  opacity: 1;
+  transition: opacity 1.2s ease;
+}
+#seizure-warning.fade-out {
+  opacity: 0;
+}
+
+#hide-seizure-warning-btn {
+  background: #fff;
+  color: #ff0055;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  padding: 6px 16px;
+  margin-left: 24px;
+  cursor: pointer;
+  float: right;
+  margin-top: -4px;
+  margin-right: 16px;
+  box-shadow: 0 1px 4px #0002;
+  transition: background 0.2s, color 0.2s;
+}
+#hide-seizure-warning-btn:hover, #hide-seizure-warning-btn:focus {
+  background: #ff3366;
+  color: #fff;
+  outline: none;
 } 
