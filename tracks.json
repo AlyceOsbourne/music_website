@@ -21,5 +21,9 @@
   {"title": "sing", "file": "tracks/sing.wav"},
   {"title": "dreams", "file": "tracks/dreams.wav"},
   {"title": "rise_and_fall", "file": "tracks/rise_and_fall.mp3"},
-  {"title": "warcry", "file": "tracks/warcry.mp3"}
+  {"title": "warcry", "file": "tracks/warcry.mp3"},
+  {"title": "arrrrr", "file": "tracks/arrrrr.mp3"},
+  {"title": "capn_dubstep", "file": "tracks/capn_dubstep.wav"},
+  {"title": "pirate_shanty_step", "file": "tracks/pirate_shanty_step.mp3"},
+  {"title": "sail_with_me", "file": "tracks/sail_with_me.wav"}
 ] 
