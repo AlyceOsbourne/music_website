@@ -25,5 +25,11 @@
   {"title": "arrrrr", "file": "tracks/arrrrr.mp3"},
   {"title": "capn_dubstep", "file": "tracks/capn_dubstep.wav"},
   {"title": "pirate_shanty_step", "file": "tracks/pirate_shanty_step.mp3"},
-  {"title": "sail_with_me", "file": "tracks/sail_with_me.wav"}
+  {"title": "sail_with_me", "file": "tracks/sail_with_me.wav"},
+  {"title": "refuse_to_die", "file": "tracks/refuse_to_die.wav"},
+  {"title": "fight_to_survive", "file": "tracks/fight_to_survive.wav"},
+  {"title": "danger", "file": "tracks/danger.wav"},
+  {"title": "hollow", "file": "tracks/hollow.wav"},
+  {"title": "dance_on_my_grave", "file": "tracks/dance_on_my_grave.wav"},
+  {"title": "rush", "file": "tracks/rush.wav"}
 ] 
